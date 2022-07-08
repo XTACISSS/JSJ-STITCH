@@ -1,7 +1,3 @@
-import room from './room.route';
-import auth from './auth.route';
-
-export{
-    auth,
-    room
-}
+export * as admin from './admin.route';
+export * as auth  from './auth.route';
+export * as marketplace from './marketplace.route';

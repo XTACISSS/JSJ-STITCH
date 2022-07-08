@@ -1,32 +1,35 @@
 //Server Config
+import path from 'path';
 import cors from 'cors';
-import express from "express";
+import cookierparser from 'cookie-parser';
+import session from 'express-session';
+import express,{Application,Request,Response} from "express";
 import httpServer from "http";
-import * as Socket from "socket.io";
+//Database
+import { sequelize } from '../db';
 //Routes
-import {room, auth} from '../routes';
-//Sockets
-import SocketEvents from './sockets/socket';
-import {ClientToServerEvents,SocketData,ServerToClientEvents, InterServerEvents} from './sockets/events';
+import { admin,auth, marketplace } from '../routes';
 
 class AplicationServer {
-  private app: express.Application;
+  private app: Application;
   private http: httpServer.Server;
-  public io: Socket.Server<ClientToServerEvents,ServerToClientEvents,InterServerEvents,SocketData>;
   private port: string = process.env.PORT || "8080";
 
   constructor() {
     this.app = express();
     this.http = httpServer.createServer(this.app);
-    this.io = new Socket.Server<ClientToServerEvents,ServerToClientEvents,InterServerEvents,SocketData>(
-      this.http,
-      {cors:{
-        origin:['http://localhost:4200', 'https://chat-app-19d4a.firebaseapp.com']
-      }}
-      );
+    this.connectDB();
     this.middlewares();
     this.routes();
-    this.sockets();
+  }
+
+  async connectDB():Promise<void>{
+    try {
+      await sequelize.authenticate();
+      console.log('database connected');
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   listen(): void {
@@ -37,21 +40,29 @@ class AplicationServer {
 
   middlewares():void{
     this.app.use(cors({
-      origin:['http://localhost:4200', 'https://chat-app-19d4a.firebaseapp.com'],
-    
+      origin:['http://localhost:4200','http://localhost:8080',],
+      credentials:true
     }));
+    this.app.use(cookierparser());
+    this.app.use(session({
+      secret:'test',
+      resave:false,
+      saveUninitialized:false
+    }))
     this.app.use(express.json());
     this.app.use(express.static('public'));
+    this.app.use('/uploads', express.static('uploads'));
   }
 
   routes():void{
-    this.app.use('/rooms',room);
-    this.app.use('/auth',auth);
+    this.app.use('/api/admin',admin.default);
+    this.app.use('/api/auth',auth.default);
+    this.app.use('/api/marketplace',marketplace.default);
+    //Angular Routes
+    this.app.get('*',(req:Request,res:Response) => {
+      res.sendFile(path.resolve(__dirname,'../public/index.html'))
+  })
   }
-  sockets(): void {
-    SocketEvents(this.io);
-  }
-
 }
 
 export default AplicationServer;

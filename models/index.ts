@@ -1,7 +1,4 @@
-import { Room } from "./room";
-import { User } from "./user";
-
-export{
-    Room,
-    User
-}
+export * from './chilexpress';
+export * from './products';
+export * from './user';
+export * from './webpay';

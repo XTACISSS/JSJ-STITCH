@@ -1,18 +1,13 @@
 import { NextFunction, Request, Response } from "express";
 import { validationResult, CustomValidator } from "express-validator";
-//Firebase
-import firebaseApp from '../firebase';
-const auth = firebaseApp.Auth;
+import { verify } from 'jsonwebtoken';
 
 export const verifyToken:CustomValidator = (token: string) =>{
-  const result = auth.verifyIdToken(token,true)
-  .then(() =>{
-    return true;
-  })
-  .catch((err) => {
-    throw err.message;
-  })
-  return result;
+  const result = verify(token,process.env.JWT_KEY!)
+  if(!result){
+    throw Error('Token de acceso inválido')
+  }
+  return true
 }
 
 export const handlerErrorResult = (req: Request,res: Response,next: NextFunction) => {
